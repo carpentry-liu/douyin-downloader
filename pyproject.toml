@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "douyin-local"
+version = "0.3.0"
+description = "Local Douyin video and album downloader with an offline media desktop app"
+requires-python = ">=3.12"
+license = "MIT"
+readme = "README.md"
+classifiers = ["Operating System :: Microsoft :: Windows", "Programming Language :: Python :: 3"]
+dependencies = ["yt-dlp==2026.8.19", "playwright==1.62.0", "imageio-ffmpeg==0.6.0"]
+
+[project.scripts]
+douyin-download = "douyin_local.cli:main"
+douyin-desktop = "douyin_local.desktop:main"
+
+[project.urls]
+Repository = "https://github.com/carpentry-liu/douyin-downloader"
+Issues = "https://github.com/carpentry-liu/douyin-downloader/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
