@@ -2,9 +2,9 @@
 from pathlib import Path
 import sys
 
-from .albums import load_album, save_album
+from .albums import save_album
 from .compose import compose_album
-from .download import find_existing, save_video
+from .download import create_download_folder, save_video
 from .posts import extract_urls, read_post, resolve_post_url
 from .resolver import item_to_info
 
@@ -18,34 +18,23 @@ def download_one(url, output, make_video=True, log=print):
     output = Path(output).resolve()
     log("正在识别作品链接（需要联网）…")
     post_id, route = resolve_post_url(url)
-    existing = find_existing(output, post_id)
-    if existing and not existing[1].get("locally_generated") and existing[1].get("engine"):
-        log(f"已有原视频校验通过：{existing[0]}")
-        return {"kind": "video", "path": str(existing[0]), "record": existing[1]}
-    for folder in sorted(output.glob(f"{post_id}_*")):
-        if folder.is_dir() and (folder / "作品信息.json").exists():
-            album = load_album(folder)
-            if album["id"] == post_id:
-                log(f"已有原素材校验通过：{folder}")
-                if make_video:
-                    path, record = compose_album(folder, output, log)
-                    return {"kind": "album", "path": str(path), "folder": str(folder), "record": record}
-                return {"kind": "album", "path": str(folder), "record": album}
     log("通过独立浏览器读取作品…")
     post = read_post(post_id, route)
     log(f"作者：{post.get('author') or '未知'}\n作品：{post['title']}")
+    folder = create_download_folder(output, post.get("author"))
+    log(f"本次保存目录：{folder}")
     if post["kind"] == "video":
         info = item_to_info({"aweme_id": post_id, "desc": post["title"], "author": {"nickname": post["author"]}, "video": post["video"]}, post_id)
         info["http_headers"] = post["headers"]
-        path, record = save_video(info, output, "browser", log)
-        return {"kind": "video", "path": str(path), "record": record}
-    folder, album = save_album(post, output, log)
+        path, record = save_video(info, folder, "browser", log)
+        return {"kind": "video", "path": str(path), "folder": str(folder), "record": record}
+    folder, album = save_album(post, folder, log, in_place=True)
     log(f"原素材已保存：{folder}")
     if make_video:
-        path, record = compose_album(folder, output, log)
+        path, record = compose_album(folder, folder, log)
         log("图文/实况播放版由本地合成，原素材另存保留。")
         return {"kind": "album", "path": str(path), "folder": str(folder), "record": record}
-    return {"kind": "album", "path": str(folder), "record": album}
+    return {"kind": "album", "path": str(folder), "folder": str(folder), "record": album}
 
 
 def download_text(text, output, make_video=True, log=print):

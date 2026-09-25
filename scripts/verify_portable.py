@@ -47,7 +47,7 @@ def main():
     standalone = acceptance / '便携程序'
     standalone.mkdir(parents=True, exist_ok=True)
     exe = standalone / 'DouyinLocal.exe'
-    shutil.copyfile(ROOT / 'dist' / exe.name, exe)
+    shutil.copyfile(artifact, exe)
     env = dict(os.environ)
     for key in ('PYTHONPATH', 'PYTHONHOME', 'VIRTUAL_ENV', 'IMAGEIO_FFMPEG_EXE', 'PLAYWRIGHT_NODEJS_PATH'):
         env.pop(key, None)

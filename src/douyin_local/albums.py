@@ -110,11 +110,11 @@ def download_asset(kind, stem, urls, folder, headers, index=None, expected_durat
     raise DownloadError(f"{stem} 下载失败，平台媒体地址可能已过期，请重试。")
 
 
-def save_album(post, output, log=print):
+def save_album(post, output, log=print, *, in_place=False):
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    destination = output / f"{post['id']}_{safe_name(post.get('author'), 20)}"
-    if destination.exists():
+    destination = output if in_place else output / f"{post['id']}_{safe_name(post.get('author'), 20)}"
+    if destination.exists() and (not in_place or any(destination.iterdir())):
         existing = load_album(destination)
         if existing["id"] != post["id"]:
             raise DownloadError("已有目录包含其他作品，停止以免覆盖。")
@@ -142,7 +142,23 @@ def save_album(post, output, log=print):
                     "downloaded_at": datetime.now(timezone.utc).isoformat(), "files": files,
                     "image_count": len(post["images"]), "media_unchanged": True}
         (staging / "作品信息.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        if destination.exists():
-            raise DownloadError("输出目录已存在，请检查其他下载任务。")
-        staging.rename(destination)
+        if in_place:
+            # 任务目录已排他创建；全部媒体校验后发布，清单最后写入。
+            for item in files:
+                target = destination / item["file"]
+                if target.exists():
+                    raise DownloadError("输出文件已存在，请检查其他下载任务。")
+                if os.name == "nt":
+                    (staging / item["file"]).rename(target)
+                else:
+                    os.link(staging / item["file"], target)
+            manifest_path = destination / "作品信息.json"
+            if os.name == "nt":
+                (staging / "作品信息.json").rename(manifest_path)
+            else:
+                os.link(staging / "作品信息.json", manifest_path)
+        else:
+            if destination.exists():
+                raise DownloadError("输出目录已存在，请检查其他下载任务。")
+            staging.rename(destination)
     return destination, manifest

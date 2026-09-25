@@ -22,7 +22,7 @@ Windows 桌面工具，支持抖音视频、图文和实况作品。保留原图
 - 支持整段分享文案和多个链接，自动去重、串行处理。
 - 图文按原顺序展示，实况保持动态并循环，完整保留原声时长；无原声时每项 5 秒。
 - 合成版明确标记为本地生成，原始文件另外保留，画面留边不裁剪。
-- 重复任务检查已有文件哈希；同名文件不匹配时停止，避免覆盖。
+- 每条链接每次下载新建「时间戳_作者昵称」目录；同秒重名自动加序号，重复下载也独立保存。
 - 深色工作台、剪贴板粘贴、链接计数、任务反馈；`Ctrl+Enter` 开始下载。
 
 **新下载需要网络与系统 Edge/Chrome；启动、已有素材合成和视频校验可以离线使用。**
@@ -45,6 +45,24 @@ py -3.12 -m venv .venv
 
 源码运行默认保存到项目 `downloads`。免安装 EXE 默认保存到 EXE 旁的 `downloads`，也可以更改位置。程序使用独立的临时浏览器，不读取日常浏览器登录资料。
 
+每条链接的全部内容放在自己的文件夹内，例如：
+
+```text
+downloads/
+├── 2026-09-25_15-30-08_作者甲/
+│   ├── 作品ID_作者甲.mp4
+│   └── 作品ID_作者甲.json
+└── 2026-09-25_15-31-20_作者乙/
+    ├── 01.jpg
+    ├── 01_实况.mp4
+    ├── 原声.mp3
+    ├── 作品信息.json
+    ├── 作品ID_作者乙_完整播放版.mp4
+    └── 作品ID_作者乙_完整播放版.json
+```
+
+时间戳使用本机当地时间，作者名取平台昵称并清理文件名非法字符；缺失时使用「未知作者」。批量链接分别保存；同一批文案重复出现的相同 URL 只处理一次。再次发起下载会重新获取并创建新目录，不再跳过历史作品。原有目录可继续用于离线合成。
+
 ## 离线工具
 
 进入「本地工具」，选择包含 **作品信息.json 和完整原素材** 的目录，点击「生成播放版」。选择 MP4 可以执行完整解码校验。不要单独移动清单或修改原素材。
@@ -58,6 +76,8 @@ py -3.12 -m venv .venv
 ```powershell
 .venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .venv\Scripts\python.exe scripts\build_portable.py
+# 如果旧版 EXE 正在运行，可以另起成品名称
+.venv\Scripts\python.exe scripts\build_portable.py --name DouyinLocal-v031
 ```
 
 生成 `dist/DouyinLocal.exe`、`使用说明.txt`、哈希记录和第三方许可。EXE 自带 Python、Tk、Playwright 驱动和 FFmpeg，可以单独移动，不要求目标电脑安装 Python；首次启动需要数秒解包。联网解析仍需要系统 Edge/Chrome。
@@ -111,4 +131,5 @@ py -3.12 -m venv .venv
 - [贡献指南](CONTRIBUTING.md)
 - [代码审查记录](docs/review.md)
 - [验证记录](docs/validation.md)
+- [v0.3.1 下载目录迭代](docs/features/F-0004-download-folders/04-测试.md)
 - [问题反馈](https://github.com/carpentry-liu/douyin-downloader/issues)

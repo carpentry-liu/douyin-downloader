@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 from . import DownloadError
-from .download import find_existing, save_video
+from .download import create_download_folder, save_video
 from .links import extract_url, resolve_id
 from .resolver import resolve_info
 
@@ -35,11 +35,6 @@ def main(argv=None):
         print("正在识别视频链接…", flush=True)
         video_id = resolve_id(url, min(args.timeout, 20))
         output = args.output.resolve()
-        if not args.info:
-            existing = find_existing(output, video_id)
-            if existing:
-                print(f"已存在且 SHA-256 校验通过，无需重复下载：\n{existing[0]}")
-                return 0
         info, engine = resolve_info(video_id, args.engine, args.timeout, args.browser,
                                     log=lambda text: print(text, flush=True))
         print(f"作者：{info.get('uploader') or '未知'}\n作品：{info['title']}", flush=True)
@@ -47,7 +42,9 @@ def main(argv=None):
             print(json.dumps({"id": video_id, "title": info["title"], "author": info.get("uploader"),
                               "duration_seconds": info.get("duration"), "engine": engine}, ensure_ascii=False, indent=2))
             return 0
-        path, record = save_video(info, output, engine, log=lambda text: print(text, flush=True))
+        folder = create_download_folder(output, info.get("uploader"))
+        print(f"本次保存目录：{folder}", flush=True)
+        path, record = save_video(info, folder, engine, log=lambda text: print(text, flush=True))
         print(f"下载完成：{path}\n{record['width']}×{record['height']} · {record['duration_seconds']:.2f} 秒 · {record['bytes'] / 1024 / 1024:.2f} MiB\n完整解码校验通过。")
         return 0
     except (DownloadError, OSError, EOFError) as exc:

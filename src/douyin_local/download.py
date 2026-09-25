@@ -26,6 +26,22 @@ def safe_name(value, limit=48):
     return value
 
 
+def create_download_folder(output, author):
+    """每次下载分配独立目录；同秒同昵称也不复用已有路径。"""
+    output = Path(output).resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    author = str(author or "").strip(" .") or "未知作者"
+    stem = f"{datetime.now():%Y-%m-%d_%H-%M-%S}_{safe_name(author, 32)}"
+    index = 1
+    while True:
+        folder = output / (stem if index == 1 else f"{stem}_{index}")
+        try:
+            folder.mkdir()
+            return folder
+        except FileExistsError:
+            index += 1
+
+
 def sha256(path):
     with path.open("rb") as source:
         return hashlib.file_digest(source, "sha256").hexdigest()

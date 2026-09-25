@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "douyin-local"
-version = "0.3.0"
+version = "0.3.1"
 description = "Local Douyin video and album downloader with an offline media desktop app"
 requires-python = ">=3.12"
 license = "MIT"
