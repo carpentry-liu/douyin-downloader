@@ -76,6 +76,7 @@ def main():
                             '--offline', '--output', str(acceptance / 'offline-output')])
     run('offline-verify', ['--verify', reports['offline-compose']['path'], '--offline'])
     run('offline-download-rejected', ['--download', 'https://www.douyin.com/video/1234567890123456789', '--offline'], expected=1)
+    run('offline-read-rejected', ['--read', 'https://www.xiaohongshu.com/explore/600000000000000000000001', '--offline'], expected=1)
     if args.online_url:
         run('online', ['--download', args.online_url, '--originals-only', '--output', str(acceptance / 'online-output')])
     (acceptance / 'summary.json').write_text(json.dumps({'success': True, 'checks': list(reports),

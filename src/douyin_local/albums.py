@@ -29,7 +29,8 @@ def load_album(folder):
     folder = Path(folder).resolve()
     try:
         data = json.loads((folder / "作品信息.json").read_text(encoding="utf-8"))
-        if not isinstance(data, dict) or not re.fullmatch(r"\d{10,25}", str(data.get("id", ""))) or not isinstance(data.get("files"), list) or not data["files"]:
+        pattern = r"[0-9a-f]{24}" if isinstance(data, dict) and data.get("platform") == "xiaohongshu" else r"\d{10,25}"
+        if not isinstance(data, dict) or not re.fullmatch(pattern, str(data.get("id", ""))) or not isinstance(data.get("files"), list) or not data["files"]:
             raise ValueError("invalid manifest")
         if not all(isinstance(item, dict) and item.get("type") in {"image", "video", "audio"} for item in data["files"]):
             raise ValueError("invalid media record")
@@ -137,6 +138,7 @@ def save_album(post, output, log=print, *, in_place=False):
             log("保存原声…")
             files.append(download_asset("audio", "原声", post["audio_urls"], staging, post["headers"]))
         manifest = {"id": post["id"], "title": post["title"], "author": post["author"],
+                    "platform": post.get("platform", "douyin"),
                     "type": "live_photo_album" if any(item["type"] == "video" for item in files) else "image_album",
                     "source_url": post["source_url"], "audio_title": post.get("audio_title"),
                     "downloaded_at": datetime.now(timezone.utc).isoformat(), "files": files,

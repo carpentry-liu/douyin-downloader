@@ -12,7 +12,7 @@ from . import DownloadError
 from . import desktop_view as view
 from .compose import compose_album
 from .download import validate_video
-from .posts import extract_urls
+from .sharing import extract_urls
 from .service import default_output, download_text
 
 
@@ -27,7 +27,8 @@ class Desktop:
         self.output = tk.StringVar(value=str(Path(output or default_output()).resolve()))
         self.folder = tk.StringVar()
         self.make_video = tk.BooleanVar(value=True)
-        root.title("抖音素材助手 · 本地工作台")
+        self.profile_limit = tk.StringVar(value="20")
+        root.title("本地素材助手 · 抖音 / 小红书")
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.report_callback_exception = self.callback_error
         view.build(self)
@@ -48,7 +49,7 @@ class Desktop:
         local = page == "local"
         self.heading.configure(text="让素材，再出发。" if local else "留住每一帧。")
         self.description.configure(text="用已有图片、实况和原声制作播放版，离线也能继续。" if local else
-                                   "把分享链接变成自己的素材库。视频、图片、实况，一次保存。")
+                                   "抖音作品、小红书笔记与主页，读取文字，也收藏画面。")
 
     def append(self, message, kind=None):
         self.log.configure(state="normal")
@@ -69,6 +70,7 @@ class Desktop:
             item.configure(state="disabled" if busy else "normal")
         if self.offline:
             self.download_button.configure(state="disabled", text="离线模式 · 下载不可用")
+            self.read_button.configure(state="disabled")
 
     def poll(self):
         for _ in range(100):
@@ -105,7 +107,7 @@ class Desktop:
 
         threading.Thread(target=worker, name="media-worker", daemon=True).start()
 
-    def download(self):
+    def download(self, read_only=False):
         if self.busy:
             return
         if self.offline:
@@ -121,16 +123,23 @@ class Desktop:
         output, make_video = self.output.get().strip(), self.make_video.get()
         if not self.check_output(output):
             return
+        try:
+            profile_limit = int(self.profile_limit.get())
+            if not 1 <= profile_limit <= 200:
+                raise ValueError
+        except ValueError:
+            self.set_status("error", "主页数量不正确", "小红书主页上限请输入 1 到 200；默认读取前 20 篇。")
+            return
 
         def job(log):
-            results = download_text(text, output, make_video, log)
+            results = download_text(text, output, make_video, log, profile_limit=profile_limit, read_only=read_only)
             good = sum(item["success"] for item in results)
             if good == len(results):
-                return "success", "作品已保存", f"{good} 个作品处理完成，文件已校验。可打开保存目录查看。"
+                return "success", "内容已读取" if read_only else "内容已保存", f"{good} 个链接处理完成。可打开保存目录查看正文、主页索引或媒体。"
             return ("partial" if good else "error", "部分完成" if good else "下载未完成",
                     f"成功 {good} / {len(results)} 个作品，原因见运行日志。")
 
-        self.start("正在保存作品", job)
+        self.start("正在读取内容" if read_only else "正在保存作品", job)
 
     def compose(self):
         if self.busy:

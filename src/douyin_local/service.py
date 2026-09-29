@@ -5,8 +5,10 @@ import sys
 from .albums import save_album
 from .compose import compose_album
 from .download import create_download_folder, save_video
-from .posts import extract_urls, read_post, resolve_post_url
+from .posts import read_post, resolve_post_url
 from .resolver import item_to_info
+from .sharing import extract_urls
+from .xiaohongshu import is_xhs
 
 
 def default_output():
@@ -14,7 +16,13 @@ def default_output():
     return base / "downloads"
 
 
-def download_one(url, output, make_video=True, log=print):
+def download_one(url, output, make_video=True, log=print, *, profile_limit=20, read_only=False):
+    if is_xhs(url):
+        from .xhs_service import process_xhs
+        return process_xhs(url, output, make_video, log, profile_limit, read_only)
+    if read_only:
+        from . import DownloadError
+        raise DownloadError('仅读取目前支持小红书主页和笔记；抖音请使用下载功能。')
     output = Path(output).resolve()
     log("正在识别作品链接（需要联网）…")
     post_id, route = resolve_post_url(url)
@@ -37,14 +45,14 @@ def download_one(url, output, make_video=True, log=print):
     return {"kind": "album", "path": str(folder), "folder": str(folder), "record": album}
 
 
-def download_text(text, output, make_video=True, log=print):
+def download_text(text, output, make_video=True, log=print, *, profile_limit=20, read_only=False):
     urls = extract_urls(text)
     results = []
     for index, url in enumerate(urls, 1):
         log(f"处理 {index}/{len(urls)}")
         try:
-            result = download_one(url, output, make_video, log)
-            log(f"完成：{result['path']}")
+            result = download_one(url, output, make_video, log, profile_limit=profile_limit, read_only=read_only)
+            log(f"{'完成' if result.get('success', True) else '部分完成'}：{result['path']}")
             results.append({"success": True, **result})
         except Exception as exc:
             from . import DownloadError

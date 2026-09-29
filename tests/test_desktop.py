@@ -33,10 +33,12 @@ class DesktopTests(unittest.TestCase):
     def test_offline_gui_and_shortcut_cannot_start_network_download(self):
         self.assertEqual(self.app.page, "local")
         self.assertEqual(self.app.download_button.cget("state"), "disabled")
+        self.assertEqual(self.app.read_button.cget("state"), "disabled")
         self.app.input.insert("1.0", "https://www.douyin.com/video/1234567890123456789")
         self.app.show_page("download")
         with patch("douyin_local.desktop.download_text") as service:
             self.app.download()
+            self.app.download(read_only=True)
             self.app.shortcut()
             service.assert_not_called()
         self.assertFalse(self.app.busy)
@@ -69,3 +71,19 @@ class DesktopTests(unittest.TestCase):
             compose.assert_not_called()
         self.assertFalse(self.app.busy)
         self.assertIn("保存位置", self.app.status_label.cget("text"))
+
+    def test_xhs_limit_validation_and_read_mode_reach_service(self):
+        self.app.offline = False
+        self.app.set_controls(False)
+        self.app.input.insert('1.0', 'https://www.xiaohongshu.com/user/profile/600000000000000000000001')
+        with patch('douyin_local.desktop.download_text', return_value=[{'success': True}]) as service:
+            self.app.profile_limit.set('0')
+            self.app.download(read_only=True)
+            service.assert_not_called()
+            self.assertFalse(self.app.busy)
+            self.app.profile_limit.set('5')
+            self.app.download(read_only=True)
+            self.finish()
+            self.assertTrue(service.call_args.kwargs['read_only'])
+            self.assertEqual(service.call_args.kwargs['profile_limit'], 5)
+            self.assertIn('内容已读取', self.app.status_label.cget('text'))

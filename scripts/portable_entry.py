@@ -15,17 +15,21 @@ def main():
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
-    parser = argparse.ArgumentParser(description="抖音素材助手：联网下载，离线合成与校验")
+    parser = argparse.ArgumentParser(description="本地素材助手：抖音 / 小红书读取下载，离线合成与校验")
     commands = parser.add_mutually_exclusive_group()
     commands.add_argument("--self-test", action="store_true")
     commands.add_argument("--download", metavar="SHARE_TEXT")
+    commands.add_argument("--read", metavar="SHARE_TEXT", help="只读取小红书笔记正文或主页列表，不下载媒体")
     commands.add_argument("--compose", metavar="FOLDER")
     commands.add_argument("--verify", metavar="MP4")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--offline", action="store_true", help="阻断本进程的网络连接，用于离线验收")
     parser.add_argument("--originals-only", action="store_true")
+    parser.add_argument("--profile-limit", type=int, default=20, help="小红书主页最多读取篇数，1–200，默认 20")
     args = parser.parse_args()
+    if not 1 <= args.profile_limit <= 200:
+        parser.error('--profile-limit 应在 1 到 200 之间')
     from douyin_local import DownloadError
     from douyin_local.service import default_output, download_text
     from douyin_local.selftest import block_network, offline_selftest
@@ -36,13 +40,14 @@ def main():
     logging.basicConfig(filename=str(log_dir / "app.log"), encoding="utf-8", level=logging.ERROR)
     result = None
     try:
-        if args.offline and args.download:
-            raise DownloadError("离线模式不能下载新作品。请联网后下载，或选择本地素材合成/校验。")
+        if args.offline and (args.download or args.read):
+            raise DownloadError("离线模式不能读取或下载新内容。请联网后重试，或选择本地素材合成/校验。")
         with block_network() if args.offline else nullcontext():
             if args.self_test:
                 result = offline_selftest()
-            elif args.download:
-                results = download_text(args.download, output, not args.originals_only)
+            elif args.download or args.read:
+                results = download_text(args.download or args.read, output, not args.originals_only,
+                                        profile_limit=args.profile_limit, read_only=bool(args.read))
                 result = {"success": all(item["success"] for item in results), "results": results}
             elif args.compose:
                 from douyin_local.compose import compose_album

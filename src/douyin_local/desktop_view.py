@@ -56,8 +56,8 @@ def dark_scrollbar(widget):
 def build(app):
     root = app.root
     root.configure(bg=BG)
-    root.geometry("1180x790")
-    root.minsize(1000, 710)
+    root.geometry("1180x860")
+    root.minsize(1000, 820)
     root.columnconfigure(1, weight=1)
     root.rowconfigure(0, weight=1)
     style = ttk.Style(root)
@@ -80,8 +80,8 @@ def build(app):
     mark.create_rectangle(2, 2, 35, 34, outline=ACCENT, width=2)
     mark.create_rectangle(11, 10, 44, 40, fill=ACCENT, outline=ACCENT)
     mark.create_polygon(22, 17, 22, 33, 33, 25, fill=INK)
-    label(rail, "抖音素材助手", size=13, bold=True).grid(row=1, column=0, sticky="w", pady=(16, 5))
-    label(rail, "DOUYIN / LOCAL", size=8, color=MUTED).grid(row=2, column=0, sticky="w", pady=(0, 35))
+    label(rail, "本地素材助手", size=13, bold=True).grid(row=1, column=0, sticky="w", pady=(16, 5))
+    label(rail, "DOUYIN + XHS", size=8, color=MUTED).grid(row=2, column=0, sticky="w", pady=(0, 35))
     app.nav = {}
     for row, (key, title) in enumerate((("download", "01   下载作品"), ("local", "02   本地工具")), 3):
         item = button(rail, title, lambda key=key: app.show_page(key), anchor="w", padx=12)
@@ -92,7 +92,7 @@ def build(app):
     label(footer, "素材留在本地", size=10, color=ACCENT, bold=True).pack(anchor="w")
     label(footer, "离线合成 · 完整校验\n无需安装运行环境", size=9, color=MUTED,
           justify="left").pack(anchor="w", pady=(8, 20))
-    label(footer, "DESKTOP   /   0.3", size=8, color=MUTED).pack(anchor="w")
+    label(footer, "DESKTOP   /   0.4", size=8, color=MUTED).pack(anchor="w")
 
     main = tk.Frame(root, bg=BG, padx=28, pady=25)
     main.grid(row=0, column=1, sticky="nsew")
@@ -117,7 +117,7 @@ def build(app):
     page_host.rowconfigure(0, weight=1)
     app.pages = {}
 
-    download = card(page_host, "粘贴作品链接", "01 / COLLECT")
+    download = card(page_host, "粘贴分享链接", "01 / READ & COLLECT")
     download.grid(row=0, column=0, sticky="nsew")
     app.pages["download"] = download
     # 先分配底部操作区，输入框使用剩余空间，小窗口也不会裁掉主按钮。
@@ -128,9 +128,25 @@ def build(app):
         disabledforeground=MUTED, font=(FONT, 10), highlightthickness=0, anchor="w")
     app.make_check.pack(fill="x", pady=(0, 5))
     app.controls.append(app.make_check)
-    label(actions, "原图、原声和实况片段另外保留。", size=9, color=MUTED).pack(anchor="w", pady=(0, 12))
-    app.download_button = button(actions, "开始下载   →", app.download, accent=True)
-    app.download_button.pack(fill="x")
+    label(actions, "抖音保留原声与实况。\n小红书支持静态图文、视频，暂不含配乐和实况。", size=9, color=MUTED,
+          justify="left", wraplength=350).pack(anchor="w", pady=(0, 12))
+    limits = tk.Frame(actions, bg=PANEL)
+    limits.pack(fill="x", pady=(0, 12))
+    label(limits, "小红书主页上限", size=9, color=MUTED).pack(side="left")
+    app.limit_entry = entry(limits, app.profile_limit)
+    app.limit_entry.configure(width=5, justify="center")
+    app.limit_entry.pack(side="left", padx=8, ipady=5)
+    app.controls.append(app.limit_entry)
+    label(limits, "篇 · 按页面顺序，含置顶", size=9, color=MUTED).pack(side="left")
+    primary = tk.Frame(actions, bg=PANEL)
+    primary.pack(fill="x")
+    primary.columnconfigure(0, weight=1)
+    primary.columnconfigure(1, weight=1)
+    app.read_button = button(primary, "仅读取 · 小红书", lambda: app.download(read_only=True))
+    app.read_button.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+    app.controls.append(app.read_button)
+    app.download_button = button(primary, "开始下载   →", app.download, accent=True)
+    app.download_button.grid(row=0, column=1, sticky="ew")
     app.controls.append(app.download_button)
     label(actions, "需要联网与 Edge / Chrome   ·   Ctrl + Enter", size=9, color=MUTED).pack(anchor="w", pady=(8, 0))
     tools = tk.Frame(download, bg=PANEL)
@@ -143,7 +159,7 @@ def build(app):
     app.controls.append(app.clear_button)
     app.link_count = label(tools, "等待输入", size=9, color=MUTED)
     app.link_count.pack(side="right")
-    label(download, "短链接或整段分享文案，支持多个作品。", color=MUTED).pack(anchor="w", pady=(0, 12))
+    label(download, "抖音作品 / 小红书笔记、主页，支持多条分享。", color=MUTED).pack(anchor="w", pady=(0, 12))
     app.input = scrolledtext.ScrolledText(download, width=1, height=7, wrap="word", font=(FONT, 11),
         bg=FIELD, fg=TEXT, insertbackground=ACCENT, selectbackground=ACCENT, selectforeground=INK,
         relief="flat", padx=14, pady=14, highlightthickness=1, highlightbackground=LINE,

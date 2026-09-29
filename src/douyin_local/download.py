@@ -135,7 +135,8 @@ def save_video(info, output, engine, log=print):
         log("正在检查 MP4 格式、大小、时长和完整解码…")
         verification = validate_video(temporary, downloaded.get("filesize"), info.get("duration"))
         record = {"id": video_id, "title": info.get("title"), "author": info.get("uploader"),
-                  "source_url": canonical_url(video_id), "engine": engine,
+                  "source_url": f"https://www.xiaohongshu.com/explore/{video_id}" if info.get("platform") == "xiaohongshu" else canonical_url(video_id),
+                  "platform": info.get("platform", "douyin"), "engine": engine,
                   "downloaded_at": datetime.now(timezone.utc).isoformat(), "file": filename,
                   "format_id": downloaded.get("format_id"), **verification}
         record_path = Path(staging) / "record.json"

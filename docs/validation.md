@@ -1,6 +1,6 @@
 # v0.3 验证记录
 
-本页保留 v0.3.0 历史证据。最新目录归档迭代见 [v0.3.1 验证](features/F-0004-download-folders/04-测试.md)。
+本页保留 v0.3.0 历史证据。下载目录见 [v0.3.1 验证](features/F-0004-download-folders/04-测试.md)，最新小红书适配见 [v0.4.0 验证](features/F-0005-xiaohongshu/04-测试.md)。本页截图链接展示当前界面，历史尺寸记录保持原样。
 
 日期：2026-09-22。环境：Windows x64、Python 3.12.3、系统 Edge；依赖版本见 pyproject.toml / requirements-build.txt。
 
